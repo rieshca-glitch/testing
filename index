@@ -2,17 +2,17 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ИСП-коты - Меню игры</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Подключаем Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Arial Rounded MT Bold', 'Arial', sans-serif;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
         
         body {
@@ -24,8 +24,45 @@
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
+            overflow-x: hidden;
         }
         
+        /* Фиксированный контейнер для игры - предотвращает растягивание */
+        .game-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #2c2c2c;
+            z-index: 2000;
+            display: none;
+            overflow: hidden;
+        }
+        
+        .game-canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #000;
+        }
+        
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background-color: #87CEEB;
+        }
+        
+        /* Остальные стили */
         .nickname-modal {
             position: fixed;
             top: 0;
@@ -78,10 +115,6 @@
             transition: all 0.3s ease;
         }
         
-        .nickname-submit:hover {
-            background-color: #777;
-        }
-        
         .game-container {
             width: 100%;
             max-width: 1200px;
@@ -91,6 +124,7 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             border: 2px solid #555;
             display: none;
+            margin: 0 auto;
         }
         
         .header {
@@ -111,20 +145,11 @@
             font-size: 1.1rem;
         }
         
-        .player-info span {
-            color: #ffcc00;
-            font-weight: bold;
-        }
-        
         .game-title {
             font-size: 3.5rem;
             color: #bbb;
             text-shadow: 3px 3px 0 #000;
             letter-spacing: 2px;
-        }
-        
-        .game-title span {
-            color: #888;
         }
         
         .content-wrapper {
@@ -152,13 +177,6 @@
             cursor: pointer;
             transition: all 0.3s ease;
             text-align: left;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .menu-button:hover {
-            background-color: #777;
-            transform: translateX(5px);
         }
         
         .menu-button.active {
@@ -213,7 +231,6 @@
             padding: 20px;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
             border-left: 5px solid #888;
         }
         
@@ -244,11 +261,6 @@
             display: flex;
             align-items: center;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            transition: transform 0.3s ease;
-        }
-        
-        .ranking-item:hover {
-            transform: translateY(-5px);
         }
         
         .ranking-item.current-player {
@@ -293,14 +305,7 @@
             flex-direction: column;
             align-items: center;
             transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
             cursor: pointer;
-            position: relative;
-        }
-        
-        .skin-card:hover {
-            transform: scale(1.05);
-            background-color: #5a5a5a;
         }
         
         .skin-card.owned {
@@ -308,14 +313,8 @@
             border: 2px solid #6ca86c;
         }
         
-        .skin-card.locked {
-            opacity: 0.7;
-            filter: grayscale(30%);
-        }
-        
         .skin-card.selected {
             border: 3px solid #ffcc00;
-            box-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
         }
         
         .skin-image {
@@ -328,7 +327,6 @@
             justify-content: center;
             align-items: center;
             overflow: hidden;
-            border: 3px solid #888;
         }
         
         .skin-image img {
@@ -342,11 +340,6 @@
             text-align: center;
             margin-bottom: 10px;
             color: #f0f0f0;
-            height: 40px;
-            overflow: hidden;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
         }
         
         .skin-price {
@@ -361,31 +354,6 @@
             gap: 5px;
         }
         
-        .skin-price.free {
-            color: #4CAF50;
-        }
-        
-        .coin-icon {
-            color: gold;
-        }
-        
-        .skin-status {
-            margin-top: 5px;
-            font-size: 0.9rem;
-            padding: 3px 8px;
-            border-radius: 10px;
-        }
-        
-        .skin-status.owned {
-            color: #4CAF50;
-            background-color: rgba(76, 175, 80, 0.2);
-        }
-        
-        .skin-status.locked {
-            color: #ff9800;
-            background-color: rgba(255, 152, 0, 0.2);
-        }
-        
         .main-screen {
             text-align: center;
             padding-top: 50px;
@@ -395,7 +363,6 @@
             font-size: 5rem;
             color: #bbb;
             margin-bottom: 20px;
-            text-shadow: 3px 3px 0 #000;
         }
         
         .game-description {
@@ -406,7 +373,6 @@
             padding: 20px;
             background-color: rgba(85, 85, 85, 0.5);
             border-radius: 10px;
-            line-height: 1.5;
         }
         
         .play-button {
@@ -419,18 +385,6 @@
             cursor: pointer;
             transition: all 0.3s ease;
             margin-bottom: 30px;
-            box-shadow: 0 8px 0 #555;
-        }
-        
-        .play-button:hover {
-            background-color: #777;
-            transform: translateY(-5px);
-            box-shadow: 0 12px 0 #555;
-        }
-        
-        .play-button:active {
-            transform: translateY(0);
-            box-shadow: 0 5px 0 #555;
         }
         
         .coins-count {
@@ -451,11 +405,6 @@
             font-weight: bold;
         }
         
-        .coin-icon-large {
-            color: gold;
-            font-size: 1.3rem;
-        }
-        
         .notification {
             position: fixed;
             top: 20px;
@@ -464,7 +413,6 @@
             color: white;
             padding: 15px 25px;
             border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             z-index: 1001;
             transform: translateX(150%);
             transition: transform 0.5s ease;
@@ -475,38 +423,19 @@
             transform: translateX(0);
         }
         
-        .notification.error {
-            background-color: #f44336;
-        }
-        
-        .notification.info {
-            background-color: #2196F3;
-        }
-        
-        .game-screen {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #2c2c2c;
-            z-index: 2000;
-            overflow: hidden;
-        }
-        
         .game-header {
             position: absolute;
             top: 10px;
             left: 0;
             width: 100%;
-            padding: 5px 10px;
+            padding: 10px;
             display: flex;
             justify-content: space-between;
             z-index: 10;
+            background: rgba(0,0,0,0.5);
         }
         
-        .score-display {
+        .score-display, .coin-display {
             background-color: rgba(0, 0, 0, 0.7);
             color: white;
             padding: 8px 12px;
@@ -515,36 +444,12 @@
             font-weight: bold;
         }
         
-        .game-canvas-container {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-        }
-        
-        #gameCanvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-        
-	canvas {
- 	   max-width: 100%;
- 	   height: auto;
-	}
-
-	@media (orientation: landscape) {
- 	   #gameCanvas {
-     	   	height: 100vh;
-     	   	width: auto;
-    		}
-	}
         .pause-btn {
             background-color: rgba(0, 0, 0, 0.7);
             color: white;
             border: none;
             padding: 8px 12px;
             border-radius: 8px;
-            font-size: 1rem;
             cursor: pointer;
         }
         
@@ -566,8 +471,6 @@
             padding: 40px;
             border-radius: 15px;
             text-align: center;
-            width: 90%;
-            max-width: 500px;
         }
         
         .game-over-title {
@@ -579,28 +482,16 @@
         .game-over-score {
             font-size: 2.5rem;
             color: #ffcc00;
-            margin-bottom: 10px;
-        }
-        
-        .game-over-coins {
-            font-size: 1.8rem;
-            color: gold;
             margin-bottom: 20px;
-        }
-        
-        .game-over-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
         }
         
         .restart-btn, .menu-btn {
             padding: 15px 30px;
             font-size: 1.3rem;
+            margin: 0 10px;
             border: none;
             border-radius: 10px;
             cursor: pointer;
-            transition: all 0.3s ease;
         }
         
         .restart-btn {
@@ -613,39 +504,6 @@
             color: white;
         }
         
-        .restart-btn:hover, .menu-btn:hover {
-            transform: scale(1.05);
-        }
-        
-        .current-skin-indicator {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            background-color: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 10px;
-            border-radius: 10px;
-            font-size: 0.9rem;
-            max-width: 150px;
-            text-align: center;
-            z-index: 10;
-        }
-        
-        .skin-in-game {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            overflow: hidden;
-            margin: 0 auto 5px;
-            border: 2px solid #ffcc00;
-        }
-        
-        .skin-in-game img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
         .exit-game-btn {
             position: absolute;
             top: 10px;
@@ -653,84 +511,10 @@
             background-color: rgba(255, 0, 0, 0.7);
             color: white;
             border: none;
-            padding: 8px 10px;
-            border-radius: 50%;
-            font-size: 1rem;
-            cursor: pointer;
-            z-index: 10;
-        }
-        
-        .coin-display {
-            position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: rgba(0, 0, 0, 0.7);
-            color: white;
             padding: 8px 12px;
             border-radius: 8px;
-            font-size: 1rem;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .coins-earned {
-            position: absolute;
-            top: 60px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: rgba(0, 0, 0, 0.7);
-            color: gold;
-            padding: 5px 10px;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            font-weight: bold;
-            display: none;
-            align-items: center;
-            gap: 5px;
-            animation: coinPopup 1s ease;
-        }
-        
-        @keyframes coinPopup {
-            0% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
-            50% { opacity: 1; transform: translateX(-50%) translateY(0); }
-            100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
-        }
-        
-        .speed-display {
-            position: absolute;
-            top: 60px;
-            left: 10px;
-            background-color: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            font-weight: bold;
-        }
-        
-        /* Стили для кнопки авторизации через Telegram */
-        .telegram-auth-btn {
-            background-color: #0088cc;
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 10px;
-            font-size: 1.2rem;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin: 10px auto;
-            transition: all 0.3s ease;
-        }
-        
-        .telegram-auth-btn:hover {
-            background-color: #0077b5;
-            transform: translateY(-2px);
+            z-index: 10;
         }
         
         @media (max-width: 900px) {
@@ -749,62 +533,16 @@
                 margin: 5px auto;
             }
             
-            .player-info {
-                position: relative;
-                top: 0;
-                right: 0;
-                margin-top: 15px;
-                display: inline-block;
-            }
-            
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .skins-container {
-                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            }
-        }
-        
-        @media (max-width: 600px) {
             .game-title {
-                font-size: 2.5rem;
-            }
-            
-            .content-area {
-                padding: 15px;
-            }
-            
-            .skins-container {
-                grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-            }
-            
-            .skin-image {
-                width: 100px;
-                height: 100px;
-            }
-            
-            .nickname-form {
-                padding: 20px;
+                font-size: 2rem;
             }
         }
         
-        ::-webkit-scrollbar {
-            width: 10px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: #444;
-            border-radius: 5px;
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: #666;
-            border-radius: 5px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: #777;
+        @media (orientation: landscape) {
+            .game-container {
+                max-height: 100vh;
+                overflow-y: auto;
+            }
         }
     </style>
 </head>
@@ -814,14 +552,6 @@
             <h2>Введите ваш игровой ник</h2>
             <input type="text" id="nicknameInput" class="nickname-input" placeholder="Ваш никнейм" maxlength="20">
             <button class="nickname-submit" id="nicknameSubmit">Начать игру</button>
-            
-            <!-- Кнопка авторизации через Telegram (если не в WebApp) -->
-            <div id="telegramAuthSection" style="margin-top: 20px; display: none;">
-                <div style="color: #bbb; margin-bottom: 10px;">Или войдите через Telegram:</div>
-                <button class="telegram-auth-btn" id="telegramAuthBtn">
-                    <i class="fab fa-telegram"></i> Войти через Telegram
-                </button>
-            </div>
         </div>
     </div>
     
@@ -830,224 +560,97 @@
     <div class="game-container" id="gameContainer">
         <div class="header">
             <h1 class="game-title">ИСП<span>-коты</span></h1>
-            <div class="coins-count" id="coinsCount">
-                <i class="fas fa-coins coin-icon-large"></i>
-                <span id="coinsAmount">0</span> монеток
+            <div class="coins-count">
+                <i class="fas fa-coins"></i>
+                <span id="coinsAmount">0</span>
             </div>
             <div class="player-info">
                 Игрок: <span id="currentPlayerName">Гость</span>
-                <div id="telegramBadge" style="display: none; font-size: 0.8rem; color: #0088cc; margin-top: 5px;">
-                    <i class="fab fa-telegram"></i> Telegram
-                </div>
             </div>
         </div>
         
         <div class="content-wrapper">
             <div class="menu-sidebar">
-                <button class="menu-button active" data-tab="main">
-                    <i class="fas fa-home"></i>Главная
-                </button>
-                <button class="menu-button" data-tab="stats">
-                    <i class="fas fa-chart-bar"></i>Статистика
-                </button>
-                <button class="menu-button" data-tab="rating">
-                    <i class="fas fa-trophy"></i>Рейтинг
-                </button>
-                <button class="menu-button" data-tab="skins">
-                    <i class="fas fa-user-circle"></i>Скины
-                </button>
+                <button class="menu-button active" data-tab="main"><i class="fas fa-home"></i>Главная</button>
+                <button class="menu-button" data-tab="stats"><i class="fas fa-chart-bar"></i>Статистика</button>
+                <button class="menu-button" data-tab="rating"><i class="fas fa-trophy"></i>Рейтинг</button>
+                <button class="menu-button" data-tab="skins"><i class="fas fa-user-circle"></i>Скины</button>
             </div>
             
             <div class="content-area">
                 <div id="main" class="tab-content active">
                     <div class="main-screen">
-                        <div class="game-logo">
-                            <i class="fas fa-cat"></i>
-                        </div>
+                        <div class="game-logo"><i class="fas fa-cat"></i></div>
                         <div class="game-description">
-                            Для удобной игры переверните экран!!! Управляйте котом нажатием на экран, прыгайте, собирайте очки. (За каждые 100 очков получайте 1 монетку)
+                            Нажмите на экран чтобы прыгнуть!<br>
+                            За каждые 100 очков получайте монетку<br>
+                            Чем больше очков - тем выше скорость и чаще препятствия!
                         </div>
-                        <button class="play-button" id="startGameBtn">
-                            НАЧАТЬ ИГРУ
-                        </button>
+                        <button class="play-button" id="startGameBtn">НАЧАТЬ ИГРУ</button>
                     </div>
                 </div>
                 
                 <div id="stats" class="tab-content">
                     <h2><i class="fas fa-chart-bar"></i> Статистика</h2>
                     <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-label">Всего сыграно игр</div>
-                            <div class="stat-value" id="totalGames">0</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Лучший результат</div>
-                            <div class="stat-value" id="bestScore">0</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Всего набрано очков</div>
-                            <div class="stat-value" id="totalPoints">0</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Всего прыжков</div>
-                            <div class="stat-value" id="totalJumps">0</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Средний результат</div>
-                            <div class="stat-value" id="averageScore">0</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Открыто скинов</div>
-                            <div class="stat-value" id="openedSkins">1/32</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Накоплено монеток</div>
-                            <div class="stat-value" id="totalCoins">0</div>
-                        </div>
+                        <div class="stat-card"><div class="stat-label">Всего сыграно игр</div><div class="stat-value" id="totalGames">0</div></div>
+                        <div class="stat-card"><div class="stat-label">Лучший результат</div><div class="stat-value" id="bestScore">0</div></div>
+                        <div class="stat-card"><div class="stat-label">Всего набрано очков</div><div class="stat-value" id="totalPoints">0</div></div>
+                        <div class="stat-card"><div class="stat-label">Всего прыжков</div><div class="stat-value" id="totalJumps">0</div></div>
+                        <div class="stat-card"><div class="stat-label">Средний результат</div><div class="stat-value" id="averageScore">0</div></div>
+                        <div class="stat-card"><div class="stat-label">Открыто скинов</div><div class="stat-value" id="openedSkins">1/32</div></div>
+                        <div class="stat-card"><div class="stat-label">Накоплено монеток</div><div class="stat-value" id="totalCoins">0</div></div>
                     </div>
                 </div>
                 
                 <div id="rating" class="tab-content">
                     <h2><i class="fas fa-trophy"></i> Рейтинг игроков</h2>
-                    <div class="ranking-list" id="rankingList">
-                    </div>
+                    <div class="ranking-list" id="rankingList"></div>
                 </div>
                 
                 <div id="skins" class="tab-content">
                     <h2><i class="fas fa-user-circle"></i> Коллекция скинов</h2>
-                    <p style="margin-bottom: 20px; font-size: 1.2rem; color: #bbb; text-align: center;">
-                        У вас есть: <span id="coinsForSkins" style="color: gold; font-weight: bold;">0</span> монеток
-                    </p>
-                    <div class="skins-container" id="skinsContainer">
-                    </div>
+                    <p style="margin-bottom: 20px; text-align: center;">У вас: <span id="coinsForSkins" style="color: gold;">0</span> монеток</p>
+                    <div class="skins-container" id="skinsContainer"></div>
                 </div>
             </div>
         </div>
     </div>
     
     <div class="game-screen" id="gameScreen">
-        <button class="exit-game-btn" id="exitGameBtn">
-            <i class="fas fa-times"></i>
-        </button>
+        <button class="exit-game-btn" id="exitGameBtn"><i class="fas fa-times"></i></button>
         <div class="game-header">
-            <div class="score-display">
-                Очки: <span id="currentScore">0</span>
-            </div>
-            <div class="coin-display" id="coinDisplay">
-                <i class="fas fa-coins coin-icon"></i>
-                <span id="currentCoins">0</span>
-            </div>
-            <button class="pause-btn" id="pauseBtn">
-                <i class="fas fa-pause"></i>
-            </button>
+            <div class="score-display">Очки: <span id="currentScore">0</span></div>
+            <div class="coin-display"><i class="fas fa-coins"></i> <span id="currentCoins">0</span></div>
+            <button class="pause-btn" id="pauseBtn"><i class="fas fa-pause"></i></button>
         </div>
-        
-        <div class="speed-display" id="speedDisplay">
-            Скорость: <span id="currentSpeed">5</span>
-        </div>
-        
-        <div class="coins-earned" id="coinsEarned">
-            <i class="fas fa-coins"></i>
-            +1 монетка!
-        </div>
-        
-        <div class="current-skin-indicator" id="currentSkinIndicator">
-            <div class="skin-in-game">
-                <img id="currentSkinImage" src="" alt="Текущий скин">
-            </div>
-            <div id="currentSkinName">Текущий скин</div>
-        </div>
-        
         <div class="game-canvas-container">
             <canvas id="gameCanvas"></canvas>
         </div>
-        
         <div class="game-over-screen" id="gameOverScreen">
             <div class="game-over-content">
                 <h2 class="game-over-title">ИГРА ОКОНЧЕНА!</h2>
                 <div class="game-over-score" id="finalScore">Очки: 0</div>
-                <div class="game-over-coins" id="finalCoins">Заработано монеток: 0</div>
                 <div class="game-over-buttons">
-                    <button class="restart-btn" id="restartBtn">
-                        <i class="fas fa-redo"></i> Играть снова
-                    </button>
-                    <button class="menu-btn" id="menuBtn">
-                        <i class="fas fa-home"></i> В меню
-                    </button>
+                    <button class="restart-btn" id="restartBtn"><i class="fas fa-redo"></i> Снова</button>
+                    <button class="menu-btn" id="menuBtn"><i class="fas fa-home"></i> В меню</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Глобальные переменные
         let playerName = "Гость";
         let playerStats = {
-            totalGames: 0,
-            bestScore: 0,
-            totalPoints: 0,
-            totalJumps: 0,
-            openedSkins: 1,
-            unlockedSkins: [0],
-            selectedSkin: 0,
-            coins: 0,
-            coinsEarned: 0,
-            lastCoinScore: 0
+            totalGames: 0, bestScore: 0, totalPoints: 0, totalJumps: 0,
+            unlockedSkins: [0], selectedSkin: 0, coins: 0
         };
-        
-        let game = {
-            canvas: null,
-            ctx: null,
-            width: 0,
-            height: 0,
-            running: false,
-            score: 0,
-            gameSpeed: 5,
-            baseSpeed: 5,
-            gravity: 0.5,
-            jumpForce: -15,
-            isPaused: false,
-            player: {
-                x: 100,
-                y: 0,
-                width: 80,
-                height: 80,
-                velocityY: 0,
-                isJumping: false,
-                skinIndex: 0
-            },
-            ground: {
-                x: 0,
-                y: 0,
-                width: 0,
-                height: 100
-            },
-            obstacles: [],
-            clouds: [],
-            lastObstacleTime: 0,
-            obstacleInterval: 2000,
-            lastCloudTime: 0,
-            cloudInterval: 3000,
-            jumpCount: 0,
-            lastScoreUpdate: 0,
-            scoreUpdateInterval: 50,
-            distanceTraveled: 0
-        };
-        
-        // Переменные для Telegram WebApp
-        let isTelegramWebApp = false;
-        let telegramUser = null;
-        let webAppInitialized = false;
         
         const skinNames = [
-            "Мелиса Агзамова", "Гульсия Аминева", "Даниил Бадранов", "Данил Байсламов", 
-            "Настя Батыршина", "Илхан Бикбулатов", "Юлдаш Габбасов", "Булат Габсабиров",
-            "Данил Газизов", "Азалия Зайнулина", "Милана Имашева", "Регина Казбакова", 
-            "Артем Мазин", "Салия Мухаметова", "София Мухаметдинова", "Арслан Махмутов",
-            "Лилия Мигранова", "Залина Петрова", "Радмир Саитбаталов", "Арслан Сайфутдинов", 
-            "Софья Сахарчук", "Даша Сиухова", "Аня Соболева", "Никита Степанов", 
-            "Тимур Тартыков", "Диана Халикова", "Илнур Хасанов", "Илназ Хасанов", 
-            "Тамила Хисамова", "Рамина Юмакаева", "Адэля Ямаева", "Айдар Ришатович"
+            "Мелиса", "Гульсия", "Даниил", "Данил", "Настя", "Илхан", "Юлдаш", "Булат",
+            "Данил Г", "Азалия", "Милана", "Регина", "Артем", "Салия", "София", "Арслан",
+            "Лилия", "Залина", "Радмир", "Арслан С", "Софья", "Даша", "Аня", "Никита",
+            "Тимур", "Диана", "Илнур", "Илназ", "Тамила", "Рамина", "Адэля", "Айдар"
         ];
         
         const skinImages = [
@@ -1092,577 +695,222 @@
             'https://i.postimg.cc/x1cxGWbG/zagruzennoe-(5).png'
         ];
         
-        const images = {
-            sky: new Image(),
-            ground: new Image(),
-            player: [],
-            obstacles: []
+        let game = {
+            canvas: null, ctx: null, width: 0, height: 0, running: false, score: 0,
+            gameSpeed: 5, baseSpeed: 5, gravity: 0.8, jumpForce: -12,
+            player: { x: 100, y: 0, width: 70, height: 70, velocityY: 0, isJumping: false },
+            groundY: 0, obstacles: [], lastObstacleTime: 0, obstacleInterval: 1800,
+            distanceTraveled: 0, lastScoreUpdate: 0, jumpCount: 0
         };
         
+        const images = { sky: new Image(), ground: new Image(), player: [], obstacles: [] };
         images.sky.src = 'https://i.postimg.cc/FRtrm1z8/photo-4-2026-01-05-14-51-52.jpg';
         images.ground.src = 'https://i.postimg.cc/d35c70QV/photo-1-2026-01-06-20-37-31.jpg';
+        skinImages.forEach(src => { const img = new Image(); img.src = src; images.player.push(img); });
+        obstacleImages.forEach(src => { const img = new Image(); img.src = src; images.obstacles.push(img); });
         
-        skinImages.forEach(src => {
-            const img = new Image();
-            img.src = src;
-            images.player.push(img);
-        });
-        
-        obstacleImages.forEach(src => {
-            const img = new Image();
-            img.src = src;
-            images.obstacles.push(img);
-        });
-        
-        // Инициализация Telegram WebApp
-        function initTelegramWebApp() {
-            if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
-                isTelegramWebApp = true;
-                
-                try {
-                    // Инициализируем WebApp
-                    Telegram.WebApp.ready();
-                    webAppInitialized = true;
-                    
-                    // Расширяем WebApp на весь экран
-                    Telegram.WebApp.expand();
-                    
-                    // Получаем данные пользователя
-                    telegramUser = Telegram.WebApp.initDataUnsafe.user;
-                    
-                    if (telegramUser) {
-                        // Автоматически устанавливаем имя из Telegram
-                        const telegramName = telegramUser.first_name + 
-                                            (telegramUser.last_name ? ' ' + telegramUser.last_name : '');
-                        document.getElementById('nicknameInput').value = telegramName;
-                        
-                        // Показываем бейдж Telegram
-                        document.getElementById('telegramBadge').style.display = 'block';
-                        
-                        // Прячем кнопку авторизации через Telegram
-                        document.getElementById('telegramAuthSection').style.display = 'none';
-                        
-                        showNotification(`Добро пожаловать, ${telegramName}!`, 'info');
-                    }
-                    
-                    // Меняем тему под Telegram
-                    if (Telegram.WebApp.colorScheme === 'dark') {
-                        document.body.style.backgroundColor = '#1a1a1a';
-                    }
-                    
-                } catch (error) {
-                    console.error('Ошибка инициализации Telegram WebApp:', error);
-                    isTelegramWebApp = false;
-                }
-            } else {
-                console.log('Telegram WebApp не обнаружен, показываем кнопку авторизации');
-                // Показываем кнопку авторизации через Telegram
-                document.getElementById('telegramAuthSection').style.display = 'block';
-                
-                // Обработчик кнопки авторизации
-                document.getElementById('telegramAuthBtn').addEventListener('click', function() {
-                    showNotification('Для авторизации запустите игру через Telegram бота', 'info');
-                });
-            }
-        }
-        
-        // Основная инициализация при загрузке страницы
-        document.addEventListener('DOMContentLoaded', function() {
-            // Инициализируем Telegram WebApp
-            initTelegramWebApp();
-            
-            // Загружаем данные игры из LocalStorage
-            loadGameData();
-            
-            // Обработка ввода ника
-            document.getElementById('nicknameSubmit').addEventListener('click', function() {
-                const nicknameInput = document.getElementById('nicknameInput').value.trim();
-                
-                if (nicknameInput === '') {
-                    showNotification('Пожалуйста, введите ваш никнейм!', 'error');
-                    return;
-                }
-                
-                playerName = nicknameInput;
-                document.getElementById('currentPlayerName').textContent = playerName;
-                
-                document.getElementById('nicknameModal').style.display = 'none';
-                document.getElementById('gameContainer').style.display = 'block';
-                
-                // Загружаем данные игрока и сохраняем в LocalStorage
-                loadPlayerDataFromLocalStorage();
-                saveGameData();
-                generateRanking();
-                generateSkins();
-                
-                showNotification(`Добро пожаловать, ${playerName}!`, 'info');
-            });
-            
-            document.getElementById('nicknameInput').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    document.getElementById('nicknameSubmit').click();
-                }
-            });
-        });
-        
-        // Функция для показа уведомлений
-        function showNotification(message, type = 'info') {
-            const notification = document.getElementById('notification');
-            notification.textContent = message;
-            notification.className = `notification ${type}`;
-            notification.classList.add('show');
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 3000);
-        }
-        
-        // Загрузка и сохранение данных игры в LocalStorage
-        function loadGameData() {
-            const savedName = localStorage.getItem('ispCatsPlayerName');
-            const savedStats = localStorage.getItem('ispCatsPlayerStats');
-            
-            if (savedName) {
-                playerName = savedName;
-                document.getElementById('nicknameInput').value = playerName;
-            }
-            
-            if (savedStats) {
-                try {
-                    const parsedStats = JSON.parse(savedStats);
-                    playerStats = parsedStats;
-                    
-                    // Инициализация необходимых свойств, если их нет
-                    if (!playerStats.unlockedSkins) {
-                        playerStats.unlockedSkins = [0];
-                    }
-                    
-                    if (playerStats.selectedSkin === undefined) {
-                        playerStats.selectedSkin = 0;
-                    }
-                    
-                    if (playerStats.coins === undefined) {
-                        playerStats.coins = 0;
-                    }
-                    
-                    if (playerStats.coinsEarned === undefined) {
-                        playerStats.coinsEarned = 0;
-                    }
-                    
-                    if (playerStats.lastCoinScore === undefined) {
-                        playerStats.lastCoinScore = 0;
-                    }
-                    
-                    updateStatsDisplay();
-                    showNotification('Прогресс загружен из памяти!', 'info');
-                } catch (e) {
-                    console.error('Ошибка загрузки данных из LocalStorage:', e);
-                }
-            }
+        function showNotification(msg, type = 'info') {
+            const n = document.getElementById('notification');
+            n.textContent = msg;
+            n.className = `notification ${type}`;
+            n.classList.add('show');
+            setTimeout(() => n.classList.remove('show'), 3000);
         }
         
         function saveGameData() {
-            try {
-                localStorage.setItem('ispCatsPlayerName', playerName);
-                localStorage.setItem('ispCatsPlayerStats', JSON.stringify(playerStats));
-                showNotification('Прогресс сохранен!', 'info');
-            } catch (e) {
-                console.error('Ошибка сохранения в LocalStorage:', e);
-                showNotification('Ошибка сохранения прогресса', 'error');
-            }
+            localStorage.setItem('ispCatsPlayerName', playerName);
+            localStorage.setItem('ispCatsPlayerStats', JSON.stringify(playerStats));
         }
         
-        function loadPlayerDataFromLocalStorage() {
-            try {
-                const savedData = localStorage.getItem('ispCatsPlayerStats');
-                if (savedData) {
-                    const parsedData = JSON.parse(savedData);
-                    if (parsedData) {
-                        // Обновляем только если данные есть
-                        playerStats = parsedData;
-                        updateStatsDisplay();
-                    }
-                }
-            } catch (e) {
-                console.log('Ошибка загрузки данных из LocalStorage:', e);
+        function loadGameData() {
+            const savedName = localStorage.getItem('ispCatsPlayerName');
+            const savedStats = localStorage.getItem('ispCatsPlayerStats');
+            if (savedName) playerName = savedName;
+            if (savedStats) {
+                try {
+                    const parsed = JSON.parse(savedStats);
+                    playerStats = { ...playerStats, ...parsed };
+                    if (!playerStats.unlockedSkins) playerStats.unlockedSkins = [0];
+                } catch(e) {}
             }
+            updateStatsDisplay();
         }
         
         function updateStatsDisplay() {
             document.getElementById('totalGames').textContent = playerStats.totalGames;
-            document.getElementById('bestScore').textContent = playerStats.bestScore.toLocaleString();
-            document.getElementById('totalPoints').textContent = playerStats.totalPoints.toLocaleString();
-            document.getElementById('totalJumps').textContent = playerStats.totalJumps.toLocaleString();
-            document.getElementById('averageScore').textContent = playerStats.totalGames > 0 ? 
-                Math.floor(playerStats.totalPoints / playerStats.totalGames).toLocaleString() : "0";
+            document.getElementById('bestScore').textContent = playerStats.bestScore;
+            document.getElementById('totalPoints').textContent = playerStats.totalPoints;
+            document.getElementById('totalJumps').textContent = playerStats.totalJumps;
+            document.getElementById('averageScore').textContent = playerStats.totalGames > 0 ? Math.floor(playerStats.totalPoints / playerStats.totalGames) : 0;
             document.getElementById('openedSkins').textContent = playerStats.unlockedSkins.length + "/32";
             document.getElementById('totalCoins').textContent = playerStats.coins;
             document.getElementById('coinsAmount').textContent = playerStats.coins;
             document.getElementById('coinsForSkins').textContent = playerStats.coins;
-            playerStats.openedSkins = playerStats.unlockedSkins.length;
         }
         
-	function getTitle(score){
- 	   if(score > 15420) return "👑 Король";
- 	   if(score >= 15420) return "👑 Легенда";
- 	   if(score >= 13250) return "🏆 Мощь";
- 	   if(score >= 12480) return "⚡ Опытный";
- 	   if(score >= 11890) return "🐱 Быстрый";
- 	   if(score >= 11230) return "🐱 Любитель";
- 	   if(score >= 10560) return "🐱 Восходящая звезда";
-    	return "🐾 Новичок";
-	}
-
         function generateRanking() {
             const rankingList = document.getElementById('rankingList');
             rankingList.innerHTML = '';
-            
-            // ВСЕГДА показываем изначальный рейтинг с демо-игроками
-            let allPlayers = [
-                { name: "Кот-чемпион", score: 15420, coins: 154, isCurrentPlayer: false },
-                { name: "Усатый прыгун", score: 13250, coins: 132, isCurrentPlayer: false },
-                { name: "Мурзик", score: 12480, coins: 124, isCurrentPlayer: false },
-                { name: "Рыжик", score: 11890, coins: 118, isCurrentPlayer: false },
-                { name: "Барсик", score: 11230, coins: 112, isCurrentPlayer: false },
-                { name: "Снежок", score: 10560, coins: 105, isCurrentPlayer: false }
+            let players = [
+                { name: "Кот-чемпион", score: 15420 },
+                { name: "Усатый прыгун", score: 13250 },
+                { name: "Мурзик", score: 12480 },
+                { name: "Рыжик", score: 11890 },
+                { name: "Барсик", score: 11230 },
+                { name: "Снежок", score: 10560 }
             ];
-            
-            // Добавляем текущего игрока в рейтинг
-            const playerIndex = allPlayers.findIndex(p => p.name === playerName);
-            if (playerIndex !== -1) {
-                // Если имя совпадает с одним из демо-игроков, обновляем его данные
-                allPlayers[playerIndex].score = playerStats.bestScore;
-                allPlayers[playerIndex].coins = playerStats.coins;
-                allPlayers[playerIndex].isCurrentPlayer = true;
-            } else {
-                // Добавляем текущего игрока как нового участника
-                allPlayers.push({ 
-                    name: playerName, 
-                    score: playerStats.bestScore, 
-                    coins: playerStats.coins, 
-                    isCurrentPlayer: true 
-                });
-            }
-            
-            // Сортируем по очкам
-            allPlayers.sort((a, b) => b.score - a.score);
-            
-            // Отображаем всех игроков
-            allPlayers.forEach((player, index) => {
-                const rankingItem = document.createElement('div');
-                rankingItem.className = `ranking-item ${player.isCurrentPlayer ? 'current-player' : ''}`;
-                
-                let placeText = "";
-                if (index === 0) placeText = "🥇 1 место";
-                else if (index === 1) placeText = "🥈 2 место";
-                else if (index === 2) placeText = "🥉 3 место";
-                else placeText = `${index + 1} место`;
-                
-		const title = getTitle(player.score);
-                
-		rankingItem.innerHTML = `
-                    <div class="rank">${index + 1}</div>
-                    <div class="player-name">${player.name} — ${title}</div>
-                    <div class="player-position">${placeText} | ${player.score.toLocaleString()} очков | ${player.coins} монеток</div>
-                `;
-                
-                rankingList.appendChild(rankingItem);
+            players.push({ name: playerName, score: playerStats.bestScore, isCurrent: true });
+            players.sort((a,b) => b.score - a.score);
+            players.forEach((p, i) => {
+                const item = document.createElement('div');
+                item.className = `ranking-item ${p.isCurrent ? 'current-player' : ''}`;
+                item.innerHTML = `<div class="rank">${i+1}</div>
+                    <div class="player-name">${p.name}</div>
+                    <div class="player-position">${i === 0 ? '🥇 1' : i === 1 ? '🥈 2' : i === 2 ? '🥉 3' : i+1} место | ${p.score} очков</div>`;
+                rankingList.appendChild(item);
             });
-            
-            // Сохраняем рейтинг в LocalStorage
-            saveRankingToLocalStorage(allPlayers);
-        }
-        
-        function saveRankingToLocalStorage(rankingData) {
-            try {
-                localStorage.setItem('ispCatsRanking', JSON.stringify(rankingData));
-            } catch (e) {
-                console.log('Ошибка сохранения рейтинга:', e);
-            }
-        }
-        
-        function checkForCoinReward() {
-            const coinsFromScore = Math.floor(game.score / 100);
-            
-            if (coinsFromScore > playerStats.coinsEarned) {
-                const newCoins = coinsFromScore - playerStats.coinsEarned;
-                playerStats.coinsEarned = coinsFromScore;
-                
-                showCoinEarnedAnimation();
-                
-                return newCoins;
-            }
-            
-            return 0;
-        }
-        
-        function showCoinEarnedAnimation() {
-            const coinsEarned = document.getElementById('coinsEarned');
-            coinsEarned.style.display = 'flex';
-            
-            setTimeout(() => {
-                coinsEarned.style.display = 'none';
-            }, 1000);
-        }
-        
-        function unlockSkinWithCoins(skinIndex, price) {
-            if (playerStats.coins >= price) {
-                playerStats.coins -= price;
-                
-                if (!playerStats.unlockedSkins.includes(skinIndex)) {
-                    playerStats.unlockedSkins.push(skinIndex);
-                    playerStats.unlockedSkins.sort((a, b) => a - b);
-                }
-                
-                playerStats.selectedSkin = skinIndex;
-                
-                saveGameData();
-                updateStatsDisplay();
-                generateSkins();
-                
-                if (game.running) {
-                    updateCurrentSkinDisplay();
-                }
-                
-                return true;
-            }
-            return false;
-        }
-        
-        function selectSkin(skinIndex) {
-            if (playerStats.unlockedSkins.includes(skinIndex)) {
-                playerStats.selectedSkin = skinIndex;
-                saveGameData();
-                generateSkins();
-                
-                if (game.running) {
-                    updateCurrentSkinDisplay();
-                }
-                
-                return true;
-            }
-            return false;
         }
         
         function generateSkins() {
-            const skinsContainer = document.getElementById('skinsContainer');
-            skinsContainer.innerHTML = '';
-            
-            const skinPrices = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 750];
-            
-            skinNames.forEach((name, index) => {
-                const skinCard = document.createElement('div');
-                const price = skinPrices[index];
-                const isOwned = playerStats.unlockedSkins.includes(index);
-                const isLocked = !isOwned;
-                const isSelected = playerStats.selectedSkin === index;
-                
-                skinCard.className = `skin-card ${isOwned ? 'owned' : ''} ${isLocked ? 'locked' : ''} ${isSelected ? 'selected' : ''}`;
-                
-                let displayName = name;
-                let displayImage = skinImages[index];
-                let displayStyle = '';
-                
-                if (index === 31 && !isOwned) {
-                    displayName = "???";
-                    displayStyle = 'filter: brightness(0.1) blur(2px);';
-                }
-                
-                skinCard.innerHTML = `
-                    <div class="skin-image">
-                        <img src="${displayImage}" alt="${displayName}" title="${displayName}" 
-                             style="${displayStyle}" 
-                             onerror="this.src='https://placekitten.com/120/120?image=${index+1}'">
-                    </div>
-                    <div class="skin-name">${displayName}</div>
-                    <div class="skin-price ${price === 0 ? 'free' : ''}">
-                        ${price === 0 ? 'Бесплатно' : `<i class="fas fa-coins coin-icon"></i>${price} монеток`}
-                    </div>
-                    <div class="skin-status ${isOwned ? 'owned' : 'locked'}">
-                        ${isOwned ? (isSelected ? '✓ Выбран' : '✓ Открыт') : 'Не открыт'}
-                    </div>
+            const container = document.getElementById('skinsContainer');
+            container.innerHTML = '';
+            skinNames.forEach((name, idx) => {
+                const owned = playerStats.unlockedSkins.includes(idx);
+                const selected = playerStats.selectedSkin === idx;
+                const card = document.createElement('div');
+                card.className = `skin-card ${owned ? 'owned' : ''} ${selected ? 'selected' : ''}`;
+                card.innerHTML = `
+                    <div class="skin-image"><img src="${skinImages[idx]}" alt="${name}"></div>
+                    <div class="skin-name">${name}</div>
+                    <div class="skin-price">${idx === 31 ? '750' : '0'} <i class="fas fa-coins"></i></div>
                 `;
-                
-                skinCard.addEventListener('click', function() {
-                    if (isOwned) {
-                        if (selectSkin(index)) {
-                            showNotification(`Скин "${name}" выбран!`, 'info');
-                        }
-                    } else {
-                        if (price === 0) {
-                            if (!playerStats.unlockedSkins.includes(index)) {
-                                playerStats.unlockedSkins.push(index);
-                                playerStats.unlockedSkins.sort((a, b) => a - b);
-                            }
-                            selectSkin(index);
-                            saveGameData();
-                            updateStatsDisplay();
-                            generateSkins();
-                            showNotification(`Скин "${name}" успешно открыт и выбран!`, 'info');
-                        } else {
-                            if (unlockSkinWithCoins(index, price)) {
-                                showNotification(`Поздравляем! Вы купили скин "${name}" за ${price} монеток!`, 'info');
-                            } else {
-                                showNotification(`Недостаточно монеток! Нужно: ${price}, у вас: ${playerStats.coins}`, 'error');
-                            }
-                        }
+                card.onclick = () => {
+                    if (owned) {
+                        playerStats.selectedSkin = idx;
+                        saveGameData();
+                        generateSkins();
+                        showNotification(`Скин "${name}" выбран!`);
+                    } else if (idx === 31 && playerStats.coins >= 750) {
+                        playerStats.coins -= 750;
+                        playerStats.unlockedSkins.push(31);
+                        playerStats.selectedSkin = 31;
+                        saveGameData();
+                        updateStatsDisplay();
+                        generateSkins();
+                        showNotification(`Скин "${name}" куплен!`);
+                    } else if (idx === 31) {
+                        showNotification(`Нужно 750 монеток!`, 'error');
                     }
-                });
-                
-                skinsContainer.appendChild(skinCard);
+                };
+                container.appendChild(card);
             });
         }
-        
-        // Обработка переключения вкладок
-        document.querySelectorAll('.menu-button').forEach(button => {
-            button.addEventListener('click', function() {
-                document.querySelectorAll('.menu-button').forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                
-                this.classList.add('active');
-                
-                document.querySelectorAll('.tab-content').forEach(tab => {
-                    tab.classList.remove('active');
-                });
-                
-                const tabId = this.getAttribute('data-tab');
-                document.getElementById(tabId).classList.add('active');
-                
-                if (tabId === 'rating') {
-                    generateRanking();
-                }
-                
-                if (tabId === 'skins') {
-                    generateSkins();
-                }
-            });
-        });
-        
-        // ИГРОВАЯ ЛОГИКА
         
         function initGame() {
             game.canvas = document.getElementById('gameCanvas');
             game.ctx = game.canvas.getContext('2d');
             
-            game.width = window.innerWidth;
-            game.height = window.innerHeight;
+            // Фиксируем размеры canvas с сохранением пропорций
+            const container = document.querySelector('.game-canvas-container');
+            const containerRect = container.getBoundingClientRect();
+            
+            // Устанавливаем фиксированное соотношение сторон 16:9 для игры
+            const gameAspect = 16 / 9;
+            let canvasWidth = containerRect.width;
+            let canvasHeight = containerRect.height;
+            
+            if (canvasWidth / canvasHeight > gameAspect) {
+                canvasWidth = canvasHeight * gameAspect;
+            } else {
+                canvasHeight = canvasWidth / gameAspect;
+            }
+            
+            game.width = canvasWidth;
+            game.height = canvasHeight;
             game.canvas.width = game.width;
             game.canvas.height = game.height;
+            game.canvas.style.width = `${canvasWidth}px`;
+            game.canvas.style.height = `${canvasHeight}px`;
+            game.canvas.style.position = 'absolute';
+            game.canvas.style.top = '50%';
+            game.canvas.style.left = '50%';
+            game.canvas.style.transform = 'translate(-50%, -50%)';
             
-            game.player.skinIndex = playerStats.selectedSkin;
-            game.player.y = game.height - game.player.height - 100;
-            game.player.velocityY = 0;
-            game.player.isJumping = false;
-            
-            game.ground.y = game.height - 100;
-            game.ground.width = game.width;
-            game.ground.height = 100;
+            game.groundY = game.height - 80;
+            game.player.x = 100;
+            game.player.y = game.groundY - game.player.height;
+            game.player.width = Math.min(70, game.width * 0.12);
+            game.player.height = game.player.width;
             
             game.score = 0;
-            game.distanceTraveled = 0;
-            playerStats.coinsEarned = 0;
-            playerStats.lastCoinScore = 0;
             game.gameSpeed = 5;
             game.baseSpeed = 5;
             game.obstacles = [];
-            game.clouds = [];
+            game.distanceTraveled = 0;
             game.lastObstacleTime = Date.now();
-            game.lastCloudTime = Date.now();
-            game.lastScoreUpdate = Date.now();
-            game.jumpCount = 0;
+            game.obstacleInterval = 1800;
             game.running = true;
             game.isPaused = false;
+            game.jumpCount = 0;
             
-            document.getElementById('currentScore').textContent = game.score;
+            document.getElementById('currentScore').textContent = '0';
             document.getElementById('currentCoins').textContent = playerStats.coins;
-            document.getElementById('currentSpeed').textContent = game.gameSpeed.toFixed(1);
-            
-            updateCurrentSkinDisplay();
             
             gameLoop();
         }
         
-        function updateCurrentSkinDisplay() {
-            const skinIndex = playerStats.selectedSkin;
-            let skinName = skinNames[skinIndex];
-            let skinImage = skinImages[skinIndex];
-            
-            if (skinIndex === 31 && !playerStats.unlockedSkins.includes(31)) {
-                skinName = "???";
-            }
-            
-            document.getElementById('currentSkinName').textContent = skinName;
-            document.getElementById('currentSkinImage').src = skinImage;
-        }
-        
         function createObstacle() {
-            const obstacleTypes = [
-                { width: 60, height: 80, type: 0 },
-                { width: 70, height: 70, type: 1 },
-                { width: 80, height: 60, type: 2 },
-                { width: 90, height: 70, type: 3 }
-            ];
-            
-            const type = Math.floor(Math.random() * obstacleTypes.length);
+            const type = Math.floor(Math.random() * 4);
             const obstacle = {
                 x: game.width,
-                y: game.ground.y - obstacleTypes[type].height,
-                width: obstacleTypes[type].width,
-                height: obstacleTypes[type].height,
-                type: obstacleTypes[type].type
+                y: game.groundY - 60,
+                width: Math.min(60, game.width * 0.1),
+                height: 60,
+                type: type
             };
-            
             game.obstacles.push(obstacle);
-        }
-        
-        function createCloud() {
-            const cloud = {
-                x: game.width,
-                y: Math.random() * (game.height / 3) + 50,
-                width: 100 + Math.random() * 100,
-                height: 60 + Math.random() * 40,
-                speed: 1 + Math.random() * 2
-            };
             
-            game.clouds.push(cloud);
+            // Динамическое изменение интервала появления препятствий в зависимости от скорости
+            // Чем выше скорость, тем меньше интервал (чаще препятствия)
+            let speedFactor = Math.min(2, game.gameSpeed / 8);
+            game.obstacleInterval = Math.max(800, 1800 - (game.gameSpeed - 5) * 100);
         }
         
         function updateGame() {
             if (game.isPaused || !game.running) return;
             
-            const currentTime = Date.now();
+            const now = Date.now();
             
+            // Обновление физики
             game.player.velocityY += game.gravity;
             game.player.y += game.player.velocityY;
             
-            if (game.player.y > game.ground.y - game.player.height) {
-                game.player.y = game.ground.y - game.player.height;
+            if (game.player.y >= game.groundY - game.player.height) {
+                game.player.y = game.groundY - game.player.height;
                 game.player.velocityY = 0;
                 game.player.isJumping = false;
             }
             
-            if (currentTime - game.lastObstacleTime > game.obstacleInterval) {
+            if (game.player.y < 0) {
+                game.player.y = 0;
+                game.player.velocityY = 0;
+            }
+            
+            // Создание препятствий с учетом скорости
+            if (now - game.lastObstacleTime >= game.obstacleInterval) {
                 createObstacle();
-                game.lastObstacleTime = currentTime;
-                
-                game.obstacleInterval = Math.max(800, 2000 - game.score * 0.01);
+                game.lastObstacleTime = now;
             }
             
-            if (currentTime - game.lastCloudTime > game.cloudInterval) {
-                createCloud();
-                game.lastCloudTime = currentTime;
-            }
-            
+            // Обновление препятствий
             for (let i = game.obstacles.length - 1; i >= 0; i--) {
                 game.obstacles[i].x -= game.gameSpeed;
                 
-                if (
-                    game.player.x < game.obstacles[i].x + game.obstacles[i].width &&
+                // Проверка коллизии
+                if (game.player.x < game.obstacles[i].x + game.obstacles[i].width &&
                     game.player.x + game.player.width > game.obstacles[i].x &&
                     game.player.y < game.obstacles[i].y + game.obstacles[i].height &&
-                    game.player.y + game.player.height > game.obstacles[i].y
-                ) {
+                    game.player.y + game.player.height > game.obstacles[i].y) {
                     gameOver();
                     return;
                 }
@@ -1672,41 +920,30 @@
                 }
             }
             
-            for (let i = game.clouds.length - 1; i >= 0; i--) {
-                game.clouds[i].x -= game.clouds[i].speed;
+            // Увеличение скорости со временем
+            game.gameSpeed = game.baseSpeed + Math.floor(game.score / 300);
+            
+            // Начисление очков
+            if (now - game.lastScoreUpdate > 50) {
+                game.score++;
+                game.distanceTraveled++;
+                document.getElementById('currentScore').textContent = game.score;
+                game.lastScoreUpdate = now;
                 
-                if (game.clouds[i].x + game.clouds[i].width < 0) {
-                    game.clouds.splice(i, 1);
+                // Начисление монеток за каждые 100 очков
+                if (game.score > 0 && game.score % 100 === 0) {
+                    playerStats.coins++;
+                    document.getElementById('currentCoins').textContent = playerStats.coins;
+                    document.getElementById('coinsAmount').textContent = playerStats.coins;
+                    showNotification('+1 монетка!', 'info');
                 }
-            }
-            
-            game.gameSpeed = game.baseSpeed + Math.floor(game.score / 100) * 0.1;
-            
-            document.getElementById('currentSpeed').textContent = game.gameSpeed.toFixed(1);
-            
-            if (currentTime - game.lastScoreUpdate > game.scoreUpdateInterval) {
-                const distancePerUpdate = game.gameSpeed * (game.scoreUpdateInterval / 1000) * 10;
-                game.distanceTraveled += distancePerUpdate;
-                
-                const scoreToAdd = Math.floor(game.distanceTraveled) - game.score;
-                if (scoreToAdd > 0) {
-                    game.score += scoreToAdd;
-                    document.getElementById('currentScore').textContent = game.score;
-                    
-                    const newCoins = checkForCoinReward();
-                    if (newCoins > 0) {
-                        playerStats.coins += newCoins;
-                        document.getElementById('currentCoins').textContent = playerStats.coins;
-                    }
-                }
-                
-                game.lastScoreUpdate = currentTime;
             }
         }
         
         function drawGame() {
             game.ctx.clearRect(0, 0, game.width, game.height);
             
+            // Небо
             if (images.sky.complete) {
                 game.ctx.drawImage(images.sky, 0, 0, game.width, game.height);
             } else {
@@ -1714,177 +951,64 @@
                 game.ctx.fillRect(0, 0, game.width, game.height);
             }
             
-            game.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-            game.clouds.forEach(cloud => {
-                game.ctx.beginPath();
-                game.ctx.ellipse(cloud.x + cloud.width/4, cloud.y + cloud.height/3, cloud.width/4, cloud.height/3, 0, 0, Math.PI * 2);
-                game.ctx.ellipse(cloud.x + cloud.width/2, cloud.y + cloud.height/4, cloud.width/4, cloud.height/3, 0, 0, Math.PI * 2);
-                game.ctx.ellipse(cloud.x + cloud.width*3/4, cloud.y + cloud.height/3, cloud.width/4, cloud.height/3, 0, 0, Math.PI * 2);
-                game.ctx.fill();
-            });
-            
+            // Земля
             if (images.ground.complete) {
-                game.ctx.drawImage(images.ground, 0, game.ground.y, game.width, game.ground.height);
+                game.ctx.drawImage(images.ground, 0, game.groundY, game.width, 80);
             } else {
                 game.ctx.fillStyle = '#8B4513';
-                game.ctx.fillRect(0, game.ground.y, game.width, game.ground.height);
+                game.ctx.fillRect(0, game.groundY, game.width, 80);
             }
             
-            game.obstacles.forEach(obstacle => {
-                if (images.obstacles[obstacle.type] && images.obstacles[obstacle.type].complete) {
-                    game.ctx.drawImage(
-                        images.obstacles[obstacle.type], 
-                        obstacle.x, 
-                        obstacle.y, 
-                        obstacle.width, 
-                        obstacle.height
-                    );
+            // Препятствия
+            game.obstacles.forEach(obs => {
+                if (images.obstacles[obs.type] && images.obstacles[obs.type].complete) {
+                    game.ctx.drawImage(images.obstacles[obs.type], obs.x, obs.y, obs.width, obs.height);
                 } else {
                     game.ctx.fillStyle = '#8B0000';
-                    game.ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
-                    
-                    game.ctx.fillStyle = '#FF0000';
-                    game.ctx.fillRect(obstacle.x + 5, obstacle.y + 5, obstacle.width - 10, obstacle.height - 10);
+                    game.ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
                 }
             });
             
-            const skinIndex = game.player.skinIndex;
-            if (images.player[skinIndex] && images.player[skinIndex].complete) {
-                game.ctx.drawImage(
-                    images.player[skinIndex],
-                    game.player.x,
-                    game.player.y,
-                    game.player.width,
-                    game.player.height
-                );
+            // Игрок
+            const skinIdx = playerStats.selectedSkin;
+            if (images.player[skinIdx] && images.player[skinIdx].complete) {
+                game.ctx.drawImage(images.player[skinIdx], game.player.x, game.player.y, game.player.width, game.player.height);
             } else {
                 game.ctx.fillStyle = '#FFA500';
                 game.ctx.fillRect(game.player.x, game.player.y, game.player.width, game.player.height);
-                
-                game.ctx.fillStyle = 'white';
-                game.ctx.fillRect(game.player.x + 15, game.player.y + 15, 15, 15);
-                game.ctx.fillRect(game.player.x + 50, game.player.y + 15, 15, 15);
-                
-                game.ctx.fillStyle = 'black';
-                game.ctx.fillRect(game.player.x + 20, game.player.y + 20, 8, 8);
-                game.ctx.fillRect(game.player.x + 55, game.player.y + 20, 8, 8);
-                
-                game.ctx.fillStyle = '#FFA500';
-                game.ctx.beginPath();
-                game.ctx.moveTo(game.player.x + 20, game.player.y);
-                game.ctx.lineTo(game.player.x + 10, game.player.y - 20);
-                game.ctx.lineTo(game.player.x + 30, game.player.y - 10);
-                game.ctx.fill();
-                
-                game.ctx.beginPath();
-                game.ctx.moveTo(game.player.x + 60, game.player.y);
-                game.ctx.lineTo(game.player.x + 70, game.player.y - 20);
-                game.ctx.lineTo(game.player.x + 50, game.player.y - 10);
-                game.ctx.fill();
-            }
-            
-            if (game.isPaused) {
-                game.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                game.ctx.fillRect(0, 0, game.width, game.height);
-                game.ctx.font = 'bold 48px Arial';
-                game.ctx.fillStyle = 'white';
-                game.ctx.textAlign = 'center';
-                game.ctx.fillText('ПАУЗА', game.width / 2, game.height / 2);
-                game.ctx.font = '24px Arial';
-                game.ctx.fillText('Нажмите ПРОБЕЛ для продолжения', game.width / 2, game.height / 2 + 50);
             }
         }
         
         function gameLoop() {
             if (!game.running) return;
-            
             updateGame();
             drawGame();
-            
             requestAnimationFrame(gameLoop);
-        }
-        
-        // Обработка нажатия клавиш
-        document.addEventListener('keydown', function(e) {
-            if (!game.running) return;
-            
-            if ((e.code === 'Space' || e.code === 'ArrowUp') && !game.player.isJumping) {
-                game.player.velocityY = game.jumpForce;
-                game.player.isJumping = true;
-                game.jumpCount++;
-                
-                playerStats.totalJumps++;
-                saveGameData();
-            }
-            
-            if (e.code === 'KeyP') {
-                togglePause();
-            }
-        });
-        
-        // Обработка кликов по экрану (для мобильных устройств)
-        gameCanvas.addEventListener('click', function() {
-            if (!game.running) return;
-            
-            if (!game.player.isJumping) {
-                game.player.velocityY = game.jumpForce;
-                game.player.isJumping = true;
-                game.jumpCount++;
-                
-                playerStats.totalJumps++;
-                saveGameData();
-            }
-        });
-        
-        function togglePause() {
-            if (!game.running) return;
-            
-            game.isPaused = !game.isPaused;
-            const pauseBtn = document.getElementById('pauseBtn');
-            if (game.isPaused) {
-                pauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-            } else {
-                pauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
-            }
         }
         
         function gameOver() {
             game.running = false;
-            
-            playerStats.totalGames += 1;
+            playerStats.totalGames++;
             playerStats.totalPoints += game.score;
-            
-            if (game.score > playerStats.bestScore) {
-                playerStats.bestScore = game.score;
-            }
-            
-            const coinsEarned = Math.floor(game.score / 100);
-            playerStats.coins += coinsEarned;
-            
+            playerStats.totalJumps += game.jumpCount;
+            if (game.score > playerStats.bestScore) playerStats.bestScore = game.score;
             saveGameData();
             updateStatsDisplay();
             
             document.getElementById('finalScore').textContent = `Очки: ${game.score}`;
-            document.getElementById('finalCoins').textContent = `Заработано монеток: ${coinsEarned}`;
             document.getElementById('gameOverScreen').style.display = 'flex';
         }
-        
-        // ОСНОВНЫЕ ФУНКЦИИ ИГРЫ
         
         function startGame() {
             document.getElementById('gameContainer').style.display = 'none';
             document.getElementById('gameScreen').style.display = 'block';
-            
             initGame();
-            
-            game.canvas.focus();
         }
         
         function returnToMenu() {
             document.getElementById('gameScreen').style.display = 'none';
             document.getElementById('gameOverScreen').style.display = 'none';
             document.getElementById('gameContainer').style.display = 'block';
-            
             generateRanking();
             generateSkins();
         }
@@ -1894,27 +1018,79 @@
             initGame();
         }
         
-        // ОБРАБОТЧИКИ СОБЫТИЙ
+        function togglePause() {
+            if (!game.running) return;
+            game.isPaused = !game.isPaused;
+            const btn = document.getElementById('pauseBtn');
+            btn.innerHTML = game.isPaused ? '<i class="fas fa-play"></i>' : '<i class="fas fa-pause"></i>';
+        }
         
-        document.getElementById('startGameBtn').addEventListener('click', function() {
-            startGame();
+        // Обработчики
+        document.getElementById('nicknameSubmit').onclick = () => {
+            const input = document.getElementById('nicknameInput').value.trim();
+            if (!input) { showNotification('Введите ник!', 'error'); return; }
+            playerName = input;
+            document.getElementById('currentPlayerName').textContent = playerName;
+            document.getElementById('nicknameModal').style.display = 'none';
+            document.getElementById('gameContainer').style.display = 'block';
+            loadGameData();
+            generateRanking();
+            generateSkins();
+            showNotification(`Добро пожаловать, ${playerName}!`);
+        };
+        
+        document.querySelectorAll('.menu-button').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.menu-button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                document.getElementById(btn.dataset.tab).classList.add('active');
+                if (btn.dataset.tab === 'rating') generateRanking();
+                if (btn.dataset.tab === 'skins') generateSkins();
+            };
         });
         
-        document.getElementById('pauseBtn').addEventListener('click', function() {
-            togglePause();
+        document.getElementById('startGameBtn').onclick = startGame;
+        document.getElementById('pauseBtn').onclick = togglePause;
+        document.getElementById('exitGameBtn').onclick = returnToMenu;
+        document.getElementById('restartBtn').onclick = restartGame;
+        document.getElementById('menuBtn').onclick = returnToMenu;
+        
+        // Управление прыжком (нажатие на экран/пробел)
+        function jump() {
+            if (!game.running || game.isPaused) return;
+            if (!game.player.isJumping) {
+                game.player.velocityY = game.jumpForce;
+                game.player.isJumping = true;
+                game.jumpCount++;
+            }
+        }
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.code === 'ArrowUp') {
+                e.preventDefault();
+                jump();
+            }
         });
         
-        document.getElementById('exitGameBtn').addEventListener('click', function() {
-            returnToMenu();
+        document.getElementById('gameCanvas').addEventListener('click', (e) => {
+            e.preventDefault();
+            jump();
         });
         
-        document.getElementById('restartBtn').addEventListener('click', function() {
-            restartGame();
+        document.getElementById('gameCanvas').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            jump();
         });
         
-        document.getElementById('menuBtn').addEventListener('click', function() {
-            returnToMenu();
+        // Обработка изменения ориентации экрана
+        window.addEventListener('resize', () => {
+            if (game.running) {
+                initGame();
+            }
         });
+        
+        loadGameData();
     </script>
 </body>
 </html>
